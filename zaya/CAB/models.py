@@ -57,7 +57,9 @@ class CabStatus(object):
     UNAVAILABLE = 'u'
     AVAILABLE = 'a'
 
-    CHOICES = [(BOOKED, 'b'), (UNAVAILABLE, 'u'), (AVAILABLE, 'a')]
+    CHOICES = [(BOOKED, 'already booked'),
+               (UNAVAILABLE, 'temporary unavailable'),
+               (AVAILABLE, 'available for booking')]
 
 
 class Cab(models.Model):
@@ -85,8 +87,8 @@ class LocationType(object):
     DESTINATION = 'd'
 
     CHOICES = [
-        (SOURCE, 'SOURCE'),
-        (DESTINATION, 'DESTINATION'),
+        (SOURCE, 'from'),
+        (DESTINATION, 'to'),
     ]
 
 
@@ -128,7 +130,7 @@ class RideStatus(object):
         (COMPLETED, 'COMPLETED'),
         (BOOKED, 'BOOKED'),
         (CANCELED_BY_USER, 'CANCELED_BY_USER'),
-        (CANCELED_BY_DRIVER, 'CANCELED BY DRIVERELED'),
+        (CANCELED_BY_DRIVER, 'CANCELED BY DRIVERER'),
         (IN_PROGRESS, 'IN PROGRESS'),
     ]
 
