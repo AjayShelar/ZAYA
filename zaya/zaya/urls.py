@@ -15,13 +15,15 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-import CAB.views
+from CAB.views import Home
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 
 urlpatterns = [
+    url(r'^', Home.as_view(), name='home'),
     url(r'^', include(router.urls)),
     url(r'^admin/', admin.site.urls),
     url(r'^cab/', include('CAB.urls')),
+    url(r'^accounts/', include('allauth.urls')),
 ]

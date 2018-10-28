@@ -181,3 +181,10 @@ class RideView(ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView):
             return Ride.get_driver_rides(user)
 
         return Ride.objects.all()
+
+
+from django.views.generic import TemplateView
+
+
+class Home(TemplateView):
+    template_name = 'home.html'

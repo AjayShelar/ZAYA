@@ -1,0 +1,10 @@
+{% load socialaccount %}
+{% include "socialaccount/snippets/provider_list.html" with process="login" %}
+<h1>SOCIAL LOGIN</h1>
+{% if user.is_authenticated %}
+<p>Welcome {{ user.username }} !!!</p>
+{% else %}
+<a href="{% provider_login_url 'github' %}">Github Sign Up</a>
+<a href="{% provider_login_url 'twitter' %}">Twitter Sign Up</a>
+<a title="{{ provider.name }}" class="socialaccount_provider {{ provider.id }}" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">{{ provider.name }}</a>
+{% endif %}

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.twitter',
     'rest_auth',
     'rest_framework.authtoken',
 ]
@@ -63,7 +65,7 @@ ROOT_URLCONF = 'zaya.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -141,3 +143,4 @@ REST_FRAMEWORK = {
     # 'PAGE_SIZE': 20
     # 'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
 }
+LOGIN_REDIRECT_URL = 'home'
