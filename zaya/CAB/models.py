@@ -43,6 +43,10 @@ class User(AbstractUser):
         user.save()
         return user
 
+    @property
+    def name_prop(self):
+        return self.name()
+
     def name(self):
         return str(self.first_name + " " + self.last_name).strip()
 
