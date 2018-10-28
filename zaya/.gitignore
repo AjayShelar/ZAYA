@@ -1,0 +1,11 @@
+.idea/*
+celerybeat-schedule.db
+celerybeat.pid
+*.pyc
+*.sqlite3
+static/*
+worker.state.db
+env/*
+.DS_Store
+.vscode
+sqlite3.db
