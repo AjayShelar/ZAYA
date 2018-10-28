@@ -4,6 +4,7 @@ from django.db import models
 from django.db import models
 from django.contrib.auth.models import AbstractUser, UserManager
 from phonenumber_field.modelfields import PhoneNumberField
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
 
 class UserType(object):
@@ -36,6 +37,14 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ('phone_number', )
     objects = CustomUserManager()
 
+    def clean(self):
+        if not self.username:
+            # Set username as phone number
+            self.username = str(self.phone_number)
+
+        if not self.password:
+            self.set_unusable_password()
+
     @staticmethod
     def create_user(**kwargs):
         user = User(**kwargs)
@@ -60,8 +69,16 @@ class User(AbstractUser):
         return str(self.name() or self.phone_number.__str__())
 
 
-def content_file_name(instance, filename):
-    return "user" + str(instance.user.pk)
+def photo_file_name(instance, filename):
+    return "user_photo" + str(instance.user.pk)
+
+
+def pan_card_file_name(instance, filename):
+    return "user_pan_card" + str(instance.user.pk)
+
+
+def license_file_name(instance, filename):
+    return "user_license" + str(instance.user.pk)
 
 
 class UserProfile(models.Model):
@@ -70,12 +87,11 @@ class UserProfile(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
         related_name='profile')
-    photo = models.ImageField(
-        upload_to=content_file_name, null=True, blank=True)
+    photo = models.ImageField(upload_to=photo_file_name, null=True, blank=True)
     pan_card = models.FileField(
-        upload_to=content_file_name, blank=True, null=True, max_length=500)
+        upload_to=pan_card_file_name, blank=True, null=True, max_length=500)
     license = models.FileField(
-        upload_to=content_file_name, blank=True, null=True, max_length=500)
+        upload_to=license_file_name, blank=True, null=True, max_length=500)
 
 
 # Create your models here.
@@ -93,11 +109,19 @@ class CabType(object):
 class CabStatus(object):
     BOOKED = 'b'
     UNAVAILABLE = 'u'
-    AVAILABLE = 'a'
+    AVAILABLE_FOR_SHARING = 'a_s'
+    AVAILABLE_FOR_SINGLE = 'a_s'
 
-    CHOICES = [(BOOKED, 'already booked'),
-               (UNAVAILABLE, 'temporary unavailable'),
-               (AVAILABLE, 'available for booking')]
+    CHOICES = [
+        (BOOKED, 'already booked'),
+        (UNAVAILABLE, 'temporary unavailable'),
+        (AVAILABLE_FOR_SHARING, 'available for booking for share'),
+        (AVAILABLE_FOR_SINGLE, 'available for booking for single'),
+    ]
+
+
+def vrc_file_name(instance, filename):
+    return "cab_vrc" + str(instance.owner.pk)
 
 
 class Cab(models.Model):
@@ -105,7 +129,7 @@ class Cab(models.Model):
         max_length=255, unique=True, blank=False, null=False)
     # Certificate of Registration of vehicle
     vrc = models.FileField(
-        upload_to=None, max_length=500, blank=True, null=True)
+        upload_to=vrc_file_name, max_length=500, blank=True, null=True)
     cab_type = models.CharField(
         max_length=255,
         choices=CabType.CHOICES,
@@ -137,13 +161,11 @@ class Location(models.Model):
         unique=True,
         blank=False,
         null=False)
-    latitude = models.CharField(
-        max_length=255, unique=True, blank=False, null=False)
-    longitude = models.CharField(
-        max_length=255, unique=True, blank=False, null=False)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     def __str__(self):
-        return str(self.latitude) + '==>>' + str(self.longitude)
+        return '(' + str(self.latitude) + ',' + str(self.longitude) + ')'
 
 
 class Route(models.Model):
@@ -173,10 +195,22 @@ class RideStatus(object):
     ]
 
 
+class RideType(object):
+    SHARING = 's'
+    NO_SHARING = 'n'
+
+    CHOICES = [(SHARING, 'SHARING'), (NO_SHARING, 'NOT SHARING')]
+
+
 class Ride(models.Model):
     route = models.OneToOneField(
         Route, related_name="rides_routes", on_delete=models.CASCADE)
-
+    type = models.CharField(
+        max_length=255,
+        choices=RideType.CHOICES,
+        unique=True,
+        blank=False,
+        null=False)
     status = models.CharField(
         max_length=255,
         choices=RideStatus.CHOICES,
@@ -185,13 +219,37 @@ class Ride(models.Model):
         null=False)
     cab = models.OneToOneField(
         Cab, related_name="rides_cab", on_delete=models.CASCADE)
-
-    passenger = models.ForeignKey(
-        'User', related_name='rides_passengers', on_delete=models.CASCADE)
+    passenger = models.ManyToManyField("User", related_name="rides_passengers")
 
     driver = models.OneToOneField(
         User, related_name="rides_dirvers", on_delete=models.CASCADE)
 
+    def clean(self):
+        if not self.driver.type in ['d', 'o']:
+            raise ValidationError('selected user is not owner or driver')
+
+        if self.cab.status in ['b', 'u']:
+            raise ValidationError(self.cab.get_status_display())
+        if self.cab.status not in ['b', 'u']:
+            if self.type == 's':
+                if self.cab.status == 'a_s':
+                    pass
+                else:
+                    raise ValidationError(self.cab.get_status_display())
+            elif self.type == 'n':
+                if self.cab.status == 'n_s':
+                    pass
+                else:
+                    raise ValidationError(self.cab.get_status_display())
+
+    @staticmethod
+    def get_user_rides(user):
+        return Ride.objects.filter(passenger=user)
+
+    @staticmethod
+    def get_driver_rides(user):
+        return Ride.objects.filter(driver=user)
+
     def __str__(self):
-        return str(self.cab) + '==>>' + str(self.driver) + '==>>' + str(
-            self.route)
+        return str(self.cab) + '==>>' + str(self.route.source) + '==>>' + str(
+            self.route.destination)

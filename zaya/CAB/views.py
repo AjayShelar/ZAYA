@@ -23,7 +23,8 @@ from rest_framework.views import APIView
 from django_filters import rest_framework as filters
 import rest_framework.filters
 from .models import User, UserProfile, Cab, Ride, Route, Location
-from .serializers import UserDataSerializer, UserSerializer, PhotoUploadSerializer
+from .serializers import UserDataSerializer, UserSerializer, PhotoUploadSerializer, CabSerializer, \
+RideSerializer, VRCUploadSerializer, RouteSerializer, LocationSerializer
 from django.http import HttpResponse, Http404, JsonResponse
 
 
@@ -44,7 +45,6 @@ def get_object_or_exception(queryset, model, *args, **kwargs):
     # If the Object is not in QS, it is possible that the object still exists but the user does not have permissions
     #
     # This might be more inefficient because Queryset here might use some JOINs which are slow.
-    # TODO: Profile using Joins vs using Object level permissions
     try:
         return queryset.get(*args, **kwargs)
     except ObjectDoesNotExist:
@@ -101,3 +101,83 @@ class PhotoUploadView(CreateAPIView):
         MultiPartParser,
         FormParser,
     )
+
+
+class CabView(ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView):
+
+    permission_classes = (IsAdminUserOrReadOnly, )
+    serializer_class = CabSerializer
+
+    def get(self, request, *args, **kwargs):
+        if not kwargs.get('pk', None):
+            return self.list(request, *args, **kwargs)
+        else:
+            return self.retrieve(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Cab.objects.all()
+
+
+class VRCUploadView(CreateAPIView):
+    permission_classes = (IsAdminUserOrReadOnly, )
+
+    queryset = Cab.objects.all()
+    serializer_class = VRCUploadSerializer
+    parser_classes = (
+        MultiPartParser,
+        FormParser,
+    )
+
+
+class LocationView(ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView):
+
+    permission_classes = (IsAdminUserOrReadOnly, )
+    serializer_class = LocationSerializer
+
+    def get(self, request, *args, **kwargs):
+        if not kwargs.get('pk', None):
+            return self.list(request, *args, **kwargs)
+        else:
+            return self.retrieve(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Location.objects.all()
+
+
+class RouteView(ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView):
+
+    permission_classes = (IsAdminUserOrReadOnly, )
+    serializer_class = RouteSerializer
+
+    def get(self, request, *args, **kwargs):
+        if not kwargs.get('pk', None):
+            return self.list(request, *args, **kwargs)
+        else:
+            return self.retrieve(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Route.objects.all()
+
+
+class RideView(ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView):
+
+    permission_classes = (IsAdminUserOrReadOnly, )
+    serializer_class = RideSerializer
+
+    def get(self, request, *args, **kwargs):
+        if not kwargs.get('pk', None):
+            return self.list(request, *args, **kwargs)
+        else:
+            return self.retrieve(request, *args, **kwargs)
+
+    def get_queryset(self):
+        if self.request.GET.get('user', None):
+            user = User.objects.get(id=self.request.GET.get('user'))
+            print(user)
+            return Ride.get_user_rides(user)
+        elif self.request.GET.get('driver', None):
+            user = User.objects.get(id=self.request.GET.get('driver'))
+            print(user)
+            return Ride.get_driver_rides(user)
+
+        return Ride.objects.all()
