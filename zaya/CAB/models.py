@@ -29,15 +29,49 @@ class User(AbstractUser):
     edited_by = models.ForeignKey('User', blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     edited = models.DateTimeField(auto_now=True)
-    pan_card = models.FileField(
-        upload_to=None, blank=True, null=True, max_length=500)
-    license = models.FileField(
-        upload_to=None, blank=True, null=True, max_length=500)
+
     type = models.CharField(
         choices=UserType.CHOICES, default='p', max_length=64)
 
     REQUIRED_FIELDS = ('phone_number', )
     objects = CustomUserManager()
+
+    @staticmethod
+    def create_user(**kwargs):
+        user = User(**kwargs)
+        user.clean()
+        user.save()
+        return user
+
+    def name(self):
+        return str(self.first_name + " " + self.last_name).strip()
+
+    def photo(self):
+        try:
+            return self.profile.photo.url
+        except Exception as e:
+            return None
+
+    def __str__(self):
+        return str(self.name() or self.phone_number.__str__())
+
+
+def content_file_name(instance, filename):
+    return "user" + str(instance.user.pk)
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='profile')
+    photo = models.ImageField(
+        upload_to=content_file_name, null=True, blank=True)
+    pan_card = models.FileField(
+        upload_to=content_file_name, blank=True, null=True, max_length=500)
+    license = models.FileField(
+        upload_to=content_file_name, blank=True, null=True, max_length=500)
 
 
 # Create your models here.
