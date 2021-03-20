@@ -56,7 +56,7 @@ get==1.0.3
 gprof2dot==2016.10.13
 idna==2.6
 jdcal==1.4
-Jinja2==2.10
+Jinja2==2.11.3
 jmespath==0.9.3
 kombu==4.1.0
 MarkupSafe==1.0
