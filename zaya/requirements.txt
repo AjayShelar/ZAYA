@@ -24,7 +24,7 @@ django-celery-beat==1.1.1
 django-cors-headers==2.1.0
 django-cuser==2017.3.16
 django-debug-panel==0.8.3
-django-debug-toolbar==1.9.1
+django-debug-toolbar==1.11.1
 django-elasticache==1.0.3
 django-filter==1.1.0
 django-jsonfield==1.0.1
